@@ -21,12 +21,21 @@
     <ClCompile Include="main.cpp">
       <Filter>原始程式檔</Filter>
     </ClCompile>
+    <ClCompile Include="MouseManipulator.cpp">
+      <Filter>資源檔</Filter>
+    </ClCompile>
+    <ClCompile Include="temp.cpp">
+      <Filter>原始程式檔</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="large.cpp">
       <Filter>資源檔</Filter>
     </ClInclude>
-    <ClInclude Include="Header.h">
+    <ClInclude Include="Header.hpp">
+      <Filter>標頭檔</Filter>
+    </ClInclude>
+    <ClInclude Include="MouseManipulator.hpp">
       <Filter>標頭檔</Filter>
     </ClInclude>
   </ItemGroup>
