@@ -6,10 +6,32 @@
 #include <cv.h>
 #include <opencv2/opencv.hpp>
 
+#define STOPOUT() 	if (waitKey(0) == ' ') break;
+#define BREAKOUT() if (waitKey(1) == ' ') break;
+#define POINT(x,  y) x>=y?return Point(x, y):return Point(y, x);
+#define D 9.0
+#define SIGMA 300.0
+#define DEVIATION 20.0
 #define KIBI 16
-#define BREAKOUT() 	if (waitKey(0) == ' ') break;
+
 
 using namespace cv;
+
+struct Zone {
+public:
+	int x;
+	int y;
+	Zone(int a = 256, int b = 0) {
+		if (a >= b) {
+			x = a;
+			y = b;
+		}
+		else {
+			x = b;
+			y = a;
+		}
+	}
+};
 
 using unit = long long;
 using number = unit[KIBI];
@@ -18,82 +40,31 @@ int set = 0;
 void plus(number, number);
 void carry(number);
 void onMouse(int event, int x, int y, int flags, void* param);
+bool inRange(Mat, Mat&, Zone);
 
 const unit mask = (unit)0b001 << (sizeof(unit) * 8 - 2);
 
 int main() {
 
 	namedWindow("frame", WINDOW_NORMAL);
-	/*	
-	namedWindow("BluredFrame", WINDOW_NORMAL);
-	namedWindow("GaussianBluredFrame", WINDOW_NORMAL);
-	namedWindow("MedianBluredFrame", WINDOW_NORMAL);
-	*/	
-    namedWindow("BilateralFilterBluredFrame", WINDOW_NORMAL);
-	namedWindow("Cvted", WINDOW_NORMAL);
+	namedWindow("Road", WINDOW_NORMAL);
 
-	cv::Mat frame = imread("C:\\2017.jpg")
-				/* 
-				, bluredFrame
-			 	, gaussianBluredFrame
-			 	, medianBluredFrame
-				*/
-				, bilateralFilterBluredFrame;
-	/*
-	cv::VideoCapture cap(0);
+	cv::Mat	frame;
+	cv::Mat road;
+	cv::VideoCapture cap("C:\\vedio.avi");
+	waitKey(1000);
 	if (!cap.isOpened()) {
 		return -1;
 	}
-	*/
-	/*
-	if (frame.empty())
-		return -1;
-	*/
-	/*
-	blur(frame, bluredFrame, Size(3, 3));
-	GaussianBlur(frame, gaussianBluredFrame, Size(3, 3), 1, 1);
-	medianBlur(frame, medianBluredFrame, 3);
-	*/
-	std::cout<<frame.depth()<<std::endl;
 
 	while (true) {
-		/*
-		while (true) {
-			if (cap.read(frame))
-					break;
-		}
-		//cv::Mat src(frame);
-		*/
-		/*
-		imshow("BluredFrame", bluredFrame);
-		imshow("GaussianBluredFrame", gaussianBluredFrame);
-	 	imshow("MedianBluredFrame", medianBluredFrame);
-		*/  
-		double* d = new double(9);
-		double* sigmaCS = new double(300);
-		/*
-		std::cout << "d : " << std::endl;
-		std::cin >> *d;
-		std::cout << "sigma : " << std::endl;
-		std::cin >> *sigmaCS;
-		*/
-		bilateralFilter(frame, bilateralFilterBluredFrame, *d, *sigmaCS, *sigmaCS);
-	    imshow("frame", frame);
-	 	imshow("BilateralFilterBluredFrame", bilateralFilterBluredFrame);
-		*d = 50;
-		*sigmaCS = 150;
-		Mat road;
-		Canny(frame, road, *d, *sigmaCS, 3, false);
-		imshow("Cvted", road);
-		BREAKOUT();
-		Canny(frame, road, *d, *sigmaCS, 3, true);
-		imshow("Cvted", road);
-		delete d;
-		delete sigmaCS;
-		BREAKOUT();
-		setMouseCallback("BilateralFilterBluredFrame", onMouse, &bilateralFilterBluredFrame);
-		inRange(bilateralFilterBluredFrame, Scalar(110, 110, 110), Scalar(130, 130, 130), road);
-		imshow("Cvted", road);
+		do {
+			cap >> frame;
+		} while (frame.empty());
+		imshow("frame", frame);
+		bilateralFilter(frame, road, D, SIGMA, SIGMA);
+		inRange(road, road, Zone(200, 40));
+		imshow("Road", road);
 		BREAKOUT();
 	}
 
@@ -266,6 +237,36 @@ void onMouse(int event, int x, int y, int flags, void *param) {
 	std::cout << "B : " << (int) *(ptr + x*chan) << std::endl;
 	std::cout << "G : " << (int) *(ptr + x*chan + 1) << std::endl;
 	std::cout << "R : " << (int) *(ptr + x*chan + 2) << std::endl;
+}
+bool inRange(Mat src, Mat &cah, Zone zone) {
+	const double dev = DEVIATION;
+	const int channel = src.channels();
+	if (channel != 3) {
+		std::cout << "There's no necessity to InRange a gray src" << std::endl;
+		return false;
+	}
+	cah = Mat(Size(src.cols, src.rows), CV_8U);
+	for (int height = 0; height != src.rows; ++height) {
+		uchar *ptr = src.ptr<uchar>(height);
+		uchar *pas = cah.ptr<uchar>(height);
+		for (int width = 0; width != src.cols; ++width) {
+			const double &&average = ((int) *(ptr + width*channel) + (int) *(ptr + width*channel + 1) + (int) *(ptr + width*channel + 2)) / 3;
+			if (average <= zone.x &&
+				 average >= zone.y &&
+				 dev >= ((double) *(ptr + width*channel) - average) &&
+				 -dev < ((double) *(ptr + width*channel) - average) &&
+			 	 dev >= ((double) *(ptr + width*channel + 1) - average) &&
+				 -dev < ((double) *(ptr + width*channel + 1) - average) &&
+			   	 dev >= ((double) *(ptr + width*channel + 2) - average) &&
+				 -dev < ((double) *(ptr + width*channel + 2) - average)) {
+				*(pas + width) = 256;
+			}
+			else {
+				*(pas + width) = 0;
+			}
+		}
+	}
+	return true;
 }
 
 #endif
