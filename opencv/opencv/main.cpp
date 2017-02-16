@@ -11,7 +11,7 @@
 #define POINT(x,  y) x>=y?return Point(x, y):return Point(y, x);
 #define D 9.0
 #define SIGMA 300.0
-#define DEVIATION 20.0
+#define DEVIATION 5.0
 #define KIBI 16
 
 
@@ -40,7 +40,8 @@ int set = 0;
 void plus(number, number);
 void carry(number);
 void onMouse(int event, int x, int y, int flags, void* param);
-bool inRange(Mat, Mat&, Zone);
+bool inRange(Mat&, Zone);
+void test(Mat, Mat&, bool);
 
 const unit mask = (unit)0b001 << (sizeof(unit) * 8 - 2);
 
@@ -52,7 +53,6 @@ int main() {
 	cv::Mat	frame;
 	cv::Mat road;
 	cv::VideoCapture cap("C:\\vedio.avi");
-	waitKey(1000);
 	if (!cap.isOpened()) {
 		return -1;
 	}
@@ -61,10 +61,12 @@ int main() {
 		do {
 			cap >> frame;
 		} while (frame.empty());
-		imshow("frame", frame);
 		bilateralFilter(frame, road, D, SIGMA, SIGMA);
-		inRange(road, road, Zone(200, 40));
+		inRange(road, Zone(80, 20));
+		//test(road, road, 1);
+		imshow("frame", frame);
 		imshow("Road", road);
+		setMouseCallback("frame", onMouse, &frame);
 		BREAKOUT();
 	}
 
@@ -238,35 +240,47 @@ void onMouse(int event, int x, int y, int flags, void *param) {
 	std::cout << "G : " << (int) *(ptr + x*chan + 1) << std::endl;
 	std::cout << "R : " << (int) *(ptr + x*chan + 2) << std::endl;
 }
-bool inRange(Mat src, Mat &cah, Zone zone) {
-	const double dev = DEVIATION;
+bool inRange(Mat& src, Zone zone) {
 	const int channel = src.channels();
 	if (channel != 3) {
 		std::cout << "There's no necessity to InRange a gray src" << std::endl;
 		return false;
 	}
-	cah = Mat(Size(src.cols, src.rows), CV_8U);
 	for (int height = 0; height != src.rows; ++height) {
 		uchar *ptr = src.ptr<uchar>(height);
-		uchar *pas = cah.ptr<uchar>(height);
 		for (int width = 0; width != src.cols; ++width) {
-			const double &&average = ((int) *(ptr + width*channel) + (int) *(ptr + width*channel + 1) + (int) *(ptr + width*channel + 2)) / 3;
+			const double &&average = ((int) *(ptr + width*channel) + (int) *(ptr + width*channel + 1) + (int) *(ptr + width*channel + 2)) / 3.0;
 			if (average <= zone.x &&
-				 average >= zone.y &&
-				 dev >= ((double) *(ptr + width*channel) - average) &&
-				 -dev < ((double) *(ptr + width*channel) - average) &&
-			 	 dev >= ((double) *(ptr + width*channel + 1) - average) &&
-				 -dev < ((double) *(ptr + width*channel + 1) - average) &&
-			   	 dev >= ((double) *(ptr + width*channel + 2) - average) &&
-				 -dev < ((double) *(ptr + width*channel + 2) - average)) {
-				*(pas + width) = 256;
+				average >= zone.y &&
+				DEVIATION >= ((int) *(ptr + width*channel) - average) &&
+				-DEVIATION < ((int) *(ptr + width*channel) - average) &&
+				DEVIATION >= ((int) *(ptr + width*channel + 1) - average) &&
+				-DEVIATION < ((int) *(ptr + width*channel + 1) - average) &&
+				DEVIATION >= ((int) *(ptr + width*channel + 2) - average) &&
+				-DEVIATION < ((int) *(ptr + width*channel + 2) - average)) {
+				*(ptr + width*channel) = (uchar)250;
+				*(ptr + width*channel + 1) = (uchar)250;
+				*(ptr + width*channel + 2) = (uchar)250;
 			}
 			else {
-				*(pas + width) = 0;
+				*(ptr + width*channel) = (uchar)0;
+				*(ptr + width*channel + 1) = (uchar)0;
+				*(ptr + width*channel + 2) = (uchar)0;
 			}
 		}
 	}
 	return true;
+}
+
+void test(Mat src, Mat &cah, bool light) {
+	cah.create(src.cols, src.rows, CV_8U);
+	for (int height = 0; height != src.rows; ++height) {
+		uchar *pas = cah.ptr<uchar>(height);
+		for (int width = 0; width != src.cols; ++width) {
+			*(pas + width) += light ? 70 : -70;
+		}
+	}
+	return;
 }
 
 #endif

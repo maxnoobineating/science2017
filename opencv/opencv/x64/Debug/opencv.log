@@ -8,7 +8,5 @@ c:\opencv\build\include\opencv2\imgproc.hpp(592): warning C4819: 檔案含有無
 c:\opencv\build\include\opencv2\stitching\detail\motion_estimators.hpp : warning C4819: 檔案含有無法在目前字碼頁 (950) 中表示的字元。請以 Unicode 格式儲存檔案以防止資料遺失
 c:\opencv\build\include\opencv2\video\tracking.hpp(532): warning C4819: 檔案含有無法在目前字碼頁 (950) 中表示的字元。請以 Unicode 格式儲存檔案以防止資料遺失
 c:\users\asus\desktop\2017\opencv\opencv\main.cpp(65): warning C4244: '引數': 將 'double' 轉換為 'int'，由於類型不同，可能導致資料遺失
-c:\users\asus\desktop\2017\opencv\opencv\main.cpp(262): warning C4305: '=': 從 'int' 轉換為 'uchar'，是由較大的類型轉換為較小的類型，可能導致資料遺失
-c:\users\asus\desktop\2017\opencv\opencv\main.cpp(262): warning C4309: '=': 轉換導致常數值遭截斷; 可能需要使用較大的類型
   opencv.vcxproj -> C:\Users\ASUS\Desktop\2017\opencv\x64\Debug\opencv.exe
   opencv.vcxproj -> C:\Users\ASUS\Desktop\2017\opencv\x64\Debug\opencv.pdb (Partial PDB)
