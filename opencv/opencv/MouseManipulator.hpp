@@ -29,11 +29,11 @@ public:
 	bool processing;
 };
 
-class MouseManipulator
+class MouseAreaSelect
 {
 public:
-	MouseManipulator();
-	~MouseManipulator();
+	MouseAreaSelect();
+	~MouseAreaSelect();
 	void initialize(const std::string &windowName);
 
 	bool hasSelection();

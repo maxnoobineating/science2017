@@ -1,4 +1,3 @@
-#ifndef ONLY
 #include <cstdio>
 #include<iostream>
 #include<vector>
@@ -31,18 +30,89 @@ public:
 			y = a;
 		}
 	}
+	~Zone(){}
 };
+struct Color8 {
+public:
+	int blue;
+	int green;
+	int red;
+	Color8(int b, int g, int r) {
+		blue = b;
+		green = g;
+		red = r;
+	}
+	~Color8() {}
+/**@做為當前pixel亮度		
+Color8::average()為BGR三色平均
+*/
+	double average() {
+		return (blue + green + red) / 3;
+	}
+/**@做為當前pixel色偏差
+Color8::deviation()為BGR三色標準差
+*/
+	double deviation() {
+		return (unsigned int)(blue - average()) + (unsigned int)(green - average()) + (unsigned int)(red - average()) / 3;
+	}
+};
+struct Deviation {
+public:
+	std::vector <Color8> color;
+
+	Deviation() {
+	}
+/**@此做為色差範圍的基準平均
+Deviation::deviationAverage()為 Color8容器裡所有標準差的平均
+為容許色偏差的基準
+*/
+	double deviationAverage() {
+		double dA = 0.0;
+		for (std::vector<Color8>::iterator iter = color.begin(); iter != color.end(); ++iter) {
+			dA += (*iter).deviation();
+		}
+		return dA / (double)color.size();
+	}
+/**@顏色二值化之亮度基準平均
+Deviation::totalAverage()為 Color8容器裡所有平均的平均
+也就是所有色彩資料的平均  
+因為只取灰色  此可當作亮度平均
+以後如果有更多顏色需求  此段需在行更改
+*/
+	double totalAverage() {
+		double tA = 0.0;
+		for (std::vector<Color8>::iterator iter = color.begin(); iter != color.end(); ++iter) {
+			tA += (*iter).average();
+		}
+		return tA / (double)color.size();
+	}
+/**@顏色二值化之亮度標準差
+Deviation::averageDeviation()為Color8容器中所有平均的標準差
+因為只取灰色  此可當作亮度容器Zone的範圍
+以後如果有更多顏色需求  此段需在行更改
+*/
+	double averageDeviation() {
+		double aD = 0.0;
+		double tAverage = totalAverage();
+		for (std::vector<Color8>::iterator iter = color.begin(); iter != color.end(); ++iter) {
+			aD += (unsigned)((*iter).average() - tAverage);
+		}
+		return aD / color.size();
+	}
+}dev;
 
 using unit = long long;
 using number = unit[KIBI];
 
-int set = 0;
 void plus(number, number);
 void carry(number);
-void onMouse(int event, int x, int y, int flags, void* param);
+void selectPixel(int, int, int, int, void*);
+void area(int, int, int, int, void *);
+void skip(int, int, int, int, void *);
 bool inRange(Mat&, Zone);
 void test(Mat, Mat&, bool);
 
+int set = 0;
 const unit mask = (unit)0b001 << (sizeof(unit) * 8 - 2);
 
 int main() {
@@ -61,12 +131,19 @@ int main() {
 		do {
 			cap >> frame;
 		} while (frame.empty());
-		bilateralFilter(frame, road, D, SIGMA, SIGMA);
-		inRange(road, Zone(80, 20));
+		//bilateralFilter(frame, road, D, SIGMA, SIGMA);
+		imshow("Road", frame);
+		inRange(frame, Zone(dev.totalAverage() + dev.averageDeviation(), dev.totalAverage() - dev.averageDeviation()));
 		//test(road, road, 1);
 		imshow("frame", frame);
-		imshow("Road", road);
-		setMouseCallback("frame", onMouse, &frame);
+		//imshow("Road", road);
+		setMouseCallback("Road", selectPixel, &frame);
+	  /*	WTH!?
+		*	這東西...TM竟然是同步執行的!?
+		*  只要call過一次
+		*  就會一直check event...
+		*/
+
 		BREAKOUT();
 	}
 
@@ -115,17 +192,6 @@ int main() {
 		plus(a, b);
 		std::cout << a[1] << a[0] << std::endl;
 	*/
-    /*
-	Mat img = imread("C:\\cat.jpg");
-	Mat img2 = img;
-	img.create(img.cols, img.rows, img.type());
-	namedWindow("Origin", WINDOW_NORMAL);
-	imshow("Origin", img);
-	img = img2;
-	waitKey();
-	imshow("Origin", img);
-	waitKey();
-*/
 	/*
 	namedWindow("輸入圖", WINDOW_NORMAL);
 	namedWindow("頻譜", WINDOW_NORMAL);
@@ -177,11 +243,6 @@ int main() {
 	imshow("逆向求輸入圖", ifft);
 	waitKey();
 	*/
-    /*
-int j = (signed int)0b11111111111111111111111111111111 << 1;
-int k = (signed int)0b11111111111111111111111111111110 >> 1;
-std::cout << j << " " << k << std::endl;
-*/
 	return 0;
 }
 
@@ -230,15 +291,19 @@ void carry(number a = { 0 } ) {
 		set++;
 	}
 }
-void onMouse(int event, int x, int y, int flags, void *param) {
+void selectPixel(int event, int x, int y, int flags, void *param) {
 	if (!(event == CV_EVENT_LBUTTONDOWN))
 		return;
 	Mat *arr = (Mat *)param;
 	int chan = arr->channels();
 	uchar *ptr = arr->ptr<uchar>(y);
-	std::cout << "B : " << (int) *(ptr + x*chan) << std::endl;
-	std::cout << "G : " << (int) *(ptr + x*chan + 1) << std::endl;
-	std::cout << "R : " << (int) *(ptr + x*chan + 2) << std::endl;
+	dev.color.push_back(Color8((int) *(ptr + x*chan), (int) *(ptr + x*chan + 1), (int) *(ptr + x*chan + 2)));
+}
+void area(int event, int x, int y, int flags, void *) {
+
+}
+void skip(int event, int x, int y, int flags, void * param) {
+	
 }
 bool inRange(Mat& src, Zone zone) {
 	const int channel = src.channels();
@@ -252,15 +317,13 @@ bool inRange(Mat& src, Zone zone) {
 			const double &&average = ((int) *(ptr + width*channel) + (int) *(ptr + width*channel + 1) + (int) *(ptr + width*channel + 2)) / 3.0;
 			if (average <= zone.x &&
 				average >= zone.y &&
-				DEVIATION >= ((int) *(ptr + width*channel) - average) &&
-				-DEVIATION < ((int) *(ptr + width*channel) - average) &&
-				DEVIATION >= ((int) *(ptr + width*channel + 1) - average) &&
-				-DEVIATION < ((int) *(ptr + width*channel + 1) - average) &&
-				DEVIATION >= ((int) *(ptr + width*channel + 2) - average) &&
-				-DEVIATION < ((int) *(ptr + width*channel + 2) - average)) {
-				*(ptr + width*channel) = (uchar)250;
-				*(ptr + width*channel + 1) = (uchar)250;
-				*(ptr + width*channel + 2) = (uchar)250;
+				((unsigned int)((int) *(ptr + width*channel) - average) + 
+				(unsigned int)((int) *(ptr + width*channel + 1) - average) + 
+				(unsigned int)((int) *(ptr + width*channel + 2) - average)) / 3 
+				<= dev.deviationAverage()) {
+				*(ptr + width*channel) = (uchar)255;
+				*(ptr + width*channel + 1) = (uchar)255;
+				*(ptr + width*channel + 2) = (uchar)255;
 			}
 			else {
 				*(ptr + width*channel) = (uchar)0;
@@ -271,7 +334,6 @@ bool inRange(Mat& src, Zone zone) {
 	}
 	return true;
 }
-
 void test(Mat src, Mat &cah, bool light) {
 	cah.create(src.cols, src.rows, CV_8U);
 	for (int height = 0; height != src.rows; ++height) {
@@ -282,5 +344,3 @@ void test(Mat src, Mat &cah, bool light) {
 	}
 	return;
 }
-
-#endif

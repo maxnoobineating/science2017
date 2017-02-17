@@ -11,19 +11,19 @@ MouseHandle::~MouseHandle()
 
 }
 
-MouseManipulator::MouseManipulator()
+MouseAreaSelect::MouseAreaSelect()
 {
 	mouseHandler = new MouseHandle();
 }
 
-MouseManipulator::~MouseManipulator()
+MouseAreaSelect::~MouseAreaSelect()
 {
 	if (mouseHandler != NULL) {
 		delete mouseHandler;
 	}
 }
 
-void MouseManipulator::initialize(const std::string &windowName)
+void MouseAreaSelect::initialize(const std::string &windowName)
 {
 	if (mouseHandler == NULL) {
 		return;
@@ -31,7 +31,7 @@ void MouseManipulator::initialize(const std::string &windowName)
 	cv::setMouseCallback(windowName, onMouse, mouseHandler);
 }
 
-bool MouseManipulator::hasSelection()
+bool MouseAreaSelect::hasSelection()
 {
 	if (mouseHandler->selectObject) {
 		return true;
@@ -41,12 +41,12 @@ bool MouseManipulator::hasSelection()
 	}
 }
 
-cv::Rect MouseManipulator::getSelectRect()
+cv::Rect MouseAreaSelect::getSelectRect()
 {
 	return mouseHandler->selecRect;
 }
 
-void MouseManipulator::clear()
+void MouseAreaSelect::clear()
 {
 	mouseHandler->processing = false;
 	mouseHandler->selecRect = cv::Rect();
@@ -54,7 +54,7 @@ void MouseManipulator::clear()
 
 }
 
-void MouseManipulator::onMouse(int event, int x, int y, int, void *ptr)
+void MouseAreaSelect::onMouse(int event, int x, int y, int, void *ptr)
 {
 	MouseHandle *mouseHandler = (MouseHandle*)ptr;
 	if (mouseHandler->processing) {
